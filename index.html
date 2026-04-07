@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webinar Escala Psi — Ingrid Rodrigues</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --gold: #B8860B;
+      --gold-light: #D4A843;
+      --cream: #FBF8F3;
+      --dark: #1A1A1A;
+      --medium: #4A4543;
+      --soft: #8A8280;
+      --white: #FFFFFF;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      color: var(--dark);
+      background: var(--dark);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================================
+       HERO — top section
+    ================================ */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 48px 24px 60px;
+      position: relative;
+      background: linear-gradient(175deg, var(--dark) 0%, #2A2420 60%, #3D3028 100%);
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: -30%;
+      width: 160%;
+      height: 160%;
+      background: radial-gradient(ellipse at 40% 30%, rgba(184,134,11,0.07) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(184,134,11,0.12);
+      border: 1px solid rgba(184,134,11,0.25);
+      padding: 7px 18px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold-light);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    .badge .dot {
+      width: 6px; height: 6px;
+      background: var(--gold-light);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    /* Headline */
+    .hero h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(30px, 6vw, 52px);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--white);
+      max-width: 700px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.6s ease-out 0.1s both;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    .hero-sub {
+      font-size: clamp(15px, 2.2vw, 18px);
+      color: rgba(255,255,255,0.65);
+      max-width: 560px;
+      line-height: 1.65;
+      margin-bottom: 32px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+
+    .hero-sub strong { color: var(--white); font-weight: 600; }
+
+    /* Date pills */
+    .date-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 36px;
+      animation: fadeIn 0.6s ease-out 0.3s both;
+    }
+
+    .date-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .date-pill span { font-size: 18px; }
+
+    /* Description */
+    .hero-body {
+      font-size: 15px;
+      color: rgba(255,255,255,0.5);
+      max-width: 520px;
+      line-height: 1.7;
+      margin-bottom: 36px;
+      animation: fadeIn 0.6s ease-out 0.35s both;
+    }
+
+    .hero-body strong { color: rgba(255,255,255,0.8); font-weight: 600; }
+
+    /* CTA */
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--white);
+      font-size: 16px;
+      font-weight: 700;
+      padding: 16px 40px;
+      border: none;
+      border-radius: 60px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 28px rgba(184,134,11,0.3);
+      animation: fadeIn 0.6s ease-out 0.4s both;
+    }
+
+    .cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 36px rgba(184,134,11,0.45);
+    }
+
+    /* ================================
+       FORM SECTION
+    ================================ */
+    .form-section {
+      padding: 72px 24px 80px;
+      background: var(--cream);
+      text-align: center;
+      position: relative;
+      scroll-margin-top: 20px;
+    }
+
+    .form-section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+    }
+
+    .form-wrap {
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .form-urgency {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(192,57,43,0.08);
+      border: 1px solid rgba(192,57,43,0.2);
+      padding: 7px 18px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #C0392B;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+    }
+
+    .form-urgency .blink {
+      width: 6px; height: 6px;
+      background: #C0392B;
+      border-radius: 50%;
+      animation: pulse 1.4s infinite;
+    }
+
+    .form-section h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(24px, 4.5vw, 34px);
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 8px;
+    }
+
+    .form-section .form-sub {
+      font-size: 14px;
+      color: var(--soft);
+      margin-bottom: 32px;
+    }
+
+    .form-card {
+      background: var(--white);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 18px;
+      padding: 32px 28px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--medium);
+      margin-bottom: 5px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 13px 16px;
+      background: var(--cream);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      color: var(--dark);
+      outline: none;
+      transition: all 0.25s ease;
+      -webkit-appearance: none;
+    }
+
+    .form-group input::placeholder { color: #B5B0AB; }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(184,134,11,0.1);
+    }
+
+    .form-group select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%238A8280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 24px rgba(184,134,11,0.25);
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px rgba(184,134,11,0.4);
+    }
+
+    .submit-btn:active { transform: translateY(0); }
+
+    .form-trust {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--soft);
+    }
+
+    .form-trust svg { width: 13px; height: 13px; }
+
+    /* ================================
+       FOOTER
+    ================================ */
+    .footer {
+      padding: 28px 24px;
+      background: var(--dark);
+      text-align: center;
+    }
+
+    .footer p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.25);
+    }
+
+    /* ================================
+       ANIMATIONS
+    ================================ */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+
+    /* ================================
+       RESPONSIVE
+    ================================ */
+    @media (max-width: 600px) {
+      .hero { padding: 56px 20px 48px; }
+      .date-row { gap: 10px; }
+      .date-pill { padding: 8px 14px; font-size: 13px; }
+      .form-section { padding: 56px 20px 64px; }
+      .form-card { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ======================== HERO ======================== -->
+  <section class="hero">
+    <div class="badge">
+      <span class="dot"></span>
+      WEBINAR GRATUITO E AO VIVO
+    </div>
+
+    <h1>Sua clínica não precisa <em>depender só de você</em></h1>
+
+    <p class="hero-sub">
+      Eu saí de 30 pacientes na agenda pra 12 e <strong>tripliquei meu faturamento</strong> sem depender da minha agenda.
+    </p>
+
+    <div class="date-row">
+      <div class="date-pill"><span>📅</span> 16 de Abril</div>
+      <div class="date-pill"><span>🕐</span> Às 12h</div>
+      <div class="date-pill"><span>💻</span> Online e gratuito</div>
+    </div>
+
+    <p class="hero-body">
+      Na quinta-feira, dia 16 de Abril, vou te mostrar ao vivo como estruturei minha clínica com equipe — e como você pode <strong>aumentar seu faturamento sem aumentar sua agenda</strong>. Se você é psicóloga com agenda cheia e sente que seu crescimento depende da sua hora, esse webinar é pra você.
+    </p>
+
+    <a href="#inscricao" class="cta">QUERO ME INSCREVER</a>
+  </section>
+
+  <!-- ======================== FORM ======================== -->
+  <section class="form-section" id="inscricao">
+    <div class="form-wrap">
+      <div class="form-urgency">
+        <span class="blink"></span>
+        AS INSCRIÇÕES SE ENCERRAM EM BREVE
+      </div>
+
+      <h2>Garanta seu acesso</h2>
+      <p class="form-sub">Preencha os dados abaixo para concluir sua inscrição.</p>
+
+      <div class="form-card">
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" placeholder="Seu nome" id="nome">
+        </div>
+        <div class="form-group">
+          <label>WhatsApp</label>
+          <input type="tel" placeholder="(00) 00000-0000" id="whatsapp">
+        </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" placeholder="seu@email.com" id="email">
+        </div>
+        <div class="form-group">
+          <label>Você já atende pacientes?</label>
+          <select id="qualificacao">
+            <option value="" disabled selected>Selecione</option>
+            <option value="sim_cheia">Sim, e minha agenda está cheia</option>
+            <option value="sim_parcial">Sim, mas ainda tenho horários vagos</option>
+            <option value="nao">Ainda não atendo</option>
+          </select>
+        </div>
+        <button class="submit-btn" onclick="handleSubmit()">QUERO PARTICIPAR →</button>
+        <div class="form-trust">
+          <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+          Seus dados estão seguros. Não enviamos spam.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== FOOTER ======================== -->
+  <footer class="footer">
+    <p>© 2026 Ingrid Rodrigues — @ingridrodriguespsi</p>
+  </footer>
+
+  <!-- ======================== SCRIPT ======================== -->
+  <script>
+    // WhatsApp mask
+    document.getElementById('whatsapp').addEventListener('input', function(e) {
+      let v = e.target.value.replace(/\D/g, '');
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+      else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+      else if (v.length > 0) v = `(${v}`;
+      e.target.value = v;
+    });
+
+    // Disable button and show loading
+    function setLoading(loading) {
+      const btn = document.querySelector('.submit-btn');
+      if (loading) {
+        btn.disabled = true;
+        btn.textContent = 'INSCREVENDO...';
+        btn.style.opacity = '0.7';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'QUERO PARTICIPAR →';
+        btn.style.opacity = '1';
+      }
+    }
+
+    async function handleSubmit() {
+      const nome = document.getElementById('nome').value.trim();
+      const whatsapp = document.getElementById('whatsapp').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const qualificacao = document.getElementById('qualificacao').value;
+
+      if (!nome || !whatsapp || !email) {
+        alert('Por favor, preencha nome, WhatsApp e e-mail.');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        // =====================================================
+        // CONFIGURAÇÃO: Substitua a chave abaixo pela sua
+        // 1. Acesse https://web3forms.com
+        // 2. Coloque seu email e clique "Create Access Key"
+        // 3. Copie a chave e cole abaixo no lugar de COLE_SUA_CHAVE_AQUI
+        // =====================================================
+        const WEB3FORMS_KEY = 'd1bb8d8b-7570-4294-995e-caa6356fc1a5';
+
+        const response = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_key: WEB3FORMS_KEY,
+            subject: '🟢 Nova inscrição — Webinar Escala Psi',
+            from_name: 'Landing Page Escala Psi',
+            nome: nome,
+            whatsapp: whatsapp,
+            email: email,
+            qualificacao: qualificacao || 'Não respondeu',
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Redireciona para a página de obrigado com o link do grupo
+          window.location.href = 'obrigado.html';
+        } else {
+          alert('Erro ao enviar. Tente novamente.');
+          setLoading(false);
+        }
+      } catch (error) {
+        // Se der erro na API, redireciona mesmo assim para não perder a lead
+        console.error('Erro:', error);
+        window.location.href = 'obrigado.html';
+      }
+    }
+  </script>
+
+</body>
+</html>
