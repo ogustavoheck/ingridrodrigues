@@ -356,6 +356,74 @@
       .form-card { padding: 24px 20px; }
     }
   </style>
+
+  <!-- =====================================================
+       Meta Pixel + CAPI — Ingrid Rodrigues
+       Worker: https://lp.ingridrodriguespsi.com/capi
+  ====================================================== -->
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+
+    var PIXEL_ID   = '1313351739884916';
+    var WORKER_URL = 'https://lp.ingridrodriguespsi.com/capi';
+
+    // Gera ID único por evento (usado para deduplicação browser + CAPI)
+    function genId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    // Lê cookie por nome
+    function getCookie(name) {
+      var m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return m ? m[2] : '';
+    }
+
+    // --- PageView ---
+    var pvId = genId();
+    fbq('init', PIXEL_ID);
+    fbq('track', 'PageView', {}, { eventID: pvId });
+
+    fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_name: 'PageView',
+        event_id: pvId,
+        event_source_url: window.location.href,
+        fbp: getCookie('_fbp'),
+        fbc: getCookie('_fbc'),
+        user_data: {}
+      })
+    }).catch(function(){});
+
+    // --- Lead (chamada pelo handleSubmit antes do redirect) ---
+    window.trackLead = async function(userData) {
+      var eventId = genId();
+
+      // Browser pixel
+      fbq('track', 'Lead', {}, { eventID: eventId });
+
+      // CAPI server-side (máx 400ms para não atrasar o redirect)
+      var capiCall = fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_name: 'Lead',
+          event_id: eventId,
+          event_source_url: window.location.href,
+          fbp: getCookie('_fbp'),
+          fbc: getCookie('_fbc'),
+          user_data: userData
+        })
+      }).catch(function(){});
+
+      await Promise.race([capiCall, new Promise(function(r){ setTimeout(r, 400); })]);
+    };
+  </script>
 </head>
 <body>
 
@@ -498,6 +566,8 @@
 
         if (result.success) {
           // Redireciona para a página de obrigado com o link do grupo
+          // Dispara evento Lead no Meta (browser + CAPI server-side)
+          await trackLead({ name: nome, email: email, phone: whatsapp });
           window.location.href = 'obrigado.html';
         } else {
           alert('Erro ao enviar. Tente novamente.');
