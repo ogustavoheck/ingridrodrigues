@@ -445,21 +445,15 @@
     // Injeta UTMs + sck na URL atual e em todos os links da página
 
     function propagateParams() {
-      var params = new URLSearchParams(window.location.search);
       var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
 
-      keys.forEach(function(k) { if (utms[k] && !params.has(k)) params.set(k, utms[k]); });
-      if (!params.has('sck')) params.set('sck', sck);
-
-      if (window.history && window.history.replaceState) {
-        window.history.replaceState(null, null,
-          window.location.pathname + '?' + params.toString() + window.location.hash);
-      }
-
+      // Propaga UTMs + sck para links da página
+      // replaceState removido: o Meta Pixel detecta mudança de URL e dispara PageView duplicado
       var links = document.getElementsByTagName('a');
       for (var i = 0; i < links.length; i++) {
         var el = links[i];
-        if (!el.href || el.hash) continue;
+        var rawHref = el.getAttribute('href') || '';
+        if (!rawHref || rawHref.charAt(0) === '#') continue; // pula âncoras puras
         try {
           var url = new URL(el.href);
           if (url.hostname !== window.location.hostname &&
