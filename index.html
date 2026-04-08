@@ -382,6 +382,22 @@
       return m ? m[2] : '';
     }
 
+    // Captura UTMs da URL e salva no sessionStorage (persiste durante a sessão)
+    function captureUtms() {
+      var params = new URLSearchParams(window.location.search);
+      var utmKeys = ['utm_source', 'utm_campaign', 'utm_medium', 'utm_content', 'utm_term'];
+      var utms = {};
+      var hasAny = false;
+      utmKeys.forEach(function(key) {
+        var val = params.get(key);
+        if (val) { utms[key] = val; hasAny = true; }
+      });
+      if (hasAny) sessionStorage.setItem('_utms', JSON.stringify(utms));
+      return JSON.parse(sessionStorage.getItem('_utms') || '{}');
+    }
+
+    var utms = captureUtms();
+
     // --- PageView ---
     var pvId = genId();
     fbq('init', PIXEL_ID);
@@ -396,6 +412,7 @@
         event_source_url: window.location.href,
         fbp: getCookie('_fbp'),
         fbc: getCookie('_fbc'),
+        utms: utms,
         user_data: {}
       })
     }).catch(function(){});
@@ -417,6 +434,7 @@
           event_source_url: window.location.href,
           fbp: getCookie('_fbp'),
           fbc: getCookie('_fbc'),
+          utms: utms,
           user_data: userData
         })
       }).catch(function(){});
