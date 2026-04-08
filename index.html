@@ -398,6 +398,38 @@
 
     var utms = captureUtms();
 
+    // Salva cookies com 1 ano de validade (persistência de dados do lead)
+    function setLeadCookie(name, value) {
+      if (!value) return;
+      var expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+      document.cookie = name + '=' + encodeURIComponent(value) +
+        '; SameSite=None; Secure; expires=' + expires +
+        '; path=/; domain=.lp.ingridrodriguespsi.com';
+    }
+
+    // Salva dados de geo no sessionStorage (vindos do Worker)
+    function storeEnrichment(enrichment) {
+      if (!enrichment) return;
+      if (enrichment.geo) sessionStorage.setItem('_geo', JSON.stringify(enrichment.geo));
+      if (enrichment.gender) sessionStorage.setItem('_gender', enrichment.gender);
+    }
+
+    // Salva todos os dados do lead em cookies após o submit
+    function saveLeadCookies(userData, enrichment) {
+      var parts = (userData.name || '').trim().split(/\s+/);
+      setLeadCookie('LeadEmail',     userData.email);
+      setLeadCookie('LeadPhone',     userData.phone);
+      setLeadCookie('LeadFirstName', parts[0] || '');
+      setLeadCookie('LeadLastName',  parts.length > 1 ? parts[parts.length - 1] : '');
+      if (enrichment) {
+        setLeadCookie('LeadGenero',  enrichment.gender || sessionStorage.getItem('_gender') || '');
+        var geo = enrichment.geo || JSON.parse(sessionStorage.getItem('_geo') || '{}');
+        setLeadCookie('LeadCity',    geo.city    || '');
+        setLeadCookie('LeadState',   geo.region  || '');
+        setLeadCookie('LeadCountry', geo.country || '');
+      }
+    }
+
     // --- PageView ---
     var pvId = genId();
     fbq('init', PIXEL_ID);
@@ -415,7 +447,9 @@
         utms: utms,
         user_data: {}
       })
-    }).catch(function(){});
+    }).then(function(r){ return r.json(); })
+      .then(function(d){ storeEnrichment(d._enrichment); })
+      .catch(function(){});
 
     // --- Lead (chamada pelo handleSubmit antes do redirect) ---
     window.trackLead = async function(userData) {
@@ -425,21 +459,30 @@
       fbq('track', 'Lead', {}, { eventID: eventId });
 
       // CAPI server-side (máx 400ms para não atrasar o redirect)
-      var capiCall = fetch(WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_name: 'Lead',
-          event_id: eventId,
-          event_source_url: window.location.href,
-          fbp: getCookie('_fbp'),
-          fbc: getCookie('_fbc'),
-          utms: utms,
-          user_data: userData
-        })
-      }).catch(function(){});
+      var enrichment = null;
+      try {
+        var res = await Promise.race([
+          fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_name: 'Lead',
+              event_id: eventId,
+              event_source_url: window.location.href,
+              fbp: getCookie('_fbp'),
+              fbc: getCookie('_fbc'),
+              utms: utms,
+              user_data: userData
+            })
+          }),
+          new Promise(function(_, rej){ setTimeout(rej, 400); })
+        ]);
+        var json = await res.json();
+        enrichment = json._enrichment || null;
+      } catch(e) {}
 
-      await Promise.race([capiCall, new Promise(function(r){ setTimeout(r, 400); })]);
+      // Salva dados do lead em cookies com 1 ano de validade
+      saveLeadCookies(userData, enrichment);
     };
   </script>
 </head>
