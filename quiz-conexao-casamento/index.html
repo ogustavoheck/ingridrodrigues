@@ -493,6 +493,7 @@
   ────────────────────────────────────────────── */
   const WHATSAPP_NUMBER  = '5534991440478'; // Número sem + e sem espaços
   const WHATSAPP_MSG     = 'Olá! Acabei de preencher o teste de desconexão no relacionamento e gostaria de agendar minha sessão inicial.';
+  const WEBHOOK_URL      = 'https://n8n.ghxmkt.com/webhook/quiz-ingrid-leads';
 
   /* ──────────────────────────────────────────────
      PERGUNTAS DO QUIZ
@@ -684,7 +685,7 @@
       btn.addEventListener('click', () => {
         wrap.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
         btn.classList.add('selected');
-        answers[idx] = { score: opt.score };
+        answers[idx] = { score: opt.score, text: stripHtml(opt.text) };
         document.getElementById('btnContinuar').style.display = 'block';
       });
 
@@ -739,6 +740,13 @@
   /* ──────────────────────────────────────────────
      SUBMIT DO FORMULÁRIO
   ────────────────────────────────────────────── */
+  /* Remove tags HTML de um texto */
+  function stripHtml(html) {
+    const d = document.createElement('div');
+    d.innerHTML = html;
+    return d.textContent || '';
+  }
+
   function submitLead() {
     const name  = document.getElementById('fName').value.trim();
     const email = document.getElementById('fEmail').value.trim();
@@ -749,8 +757,33 @@
       return;
     }
 
-    // Aqui você pode enviar os dados para seu CRM / webhook n8n
-    // fetch('/api/lead', { method:'POST', body: JSON.stringify({ name, email, phone, score: calcScore() }) });
+    const score  = calcScore();
+    const result = RESULTS.find(r => score >= r.range[0] && score <= r.range[1]) || RESULTS[RESULTS.length - 1];
+
+    const payload = {
+      timestamp : new Date().toISOString(),
+      nome      : name,
+      email     : email,
+      whatsapp  : phone,
+      pontuacao : score,
+      resultado : result.title,
+      p1        : answers[0]?.text || '',
+      p2        : answers[1]?.text || '',
+      p3        : answers[2]?.text || '',
+      p4        : answers[3]?.text || '',
+      p5        : answers[4]?.text || '',
+      p6        : answers[5]?.text || '',
+      p7        : answers[6]?.text || '',
+      p8        : answers[7]?.text || '',
+      p9        : answers[8]?.text || '',
+    };
+
+    // Dispara webhook de forma não-bloqueante (não trava o funil se falhar)
+    fetch(WEBHOOK_URL, {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify(payload),
+    }).catch(() => {}); // silencia erros de rede
 
     setProgress(96);
     showScreen('screen-loading');
