@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Descubra se é possível recuperar a conexão no seu casamento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #ffffff;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    /* ── Progress Bar ── */
+    .progress-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+      height: 7px;
+      background: #e2e2e2;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #1a1a1a;
+      transition: width 0.4s ease;
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* ── Layout ── */
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      padding: 40px 24px 32px;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Highlight color ── */
+    .hl { color: #c07830; }
+    .hl-red { color: #d63030; }
+
+    /* ── Intro ── */
+    .intro-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+    }
+    .intro-title {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1.25;
+      text-align: center;
+    }
+    .intro-subtitle {
+      font-size: 15px;
+      color: #444;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .intro-note {
+      font-size: 13px;
+      color: #888;
+      text-align: center;
+    }
+
+    /* ── Question ── */
+    .q-title {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.45;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .q-sub {
+      font-size: 13px;
+      color: #888;
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1.5px solid #e4e4e4;
+      border-radius: 14px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      font-size: 14px;
+      color: #1a1a1a;
+      line-height: 1.45;
+      transition: border-color 0.18s, background 0.18s;
+      font-family: 'Inter', sans-serif;
+      width: 100%;
+    }
+    .option:hover { border-color: #c07830; background: #fdf9f4; }
+    .option.selected { border-color: #c07830; background: #fdf9f4; }
+    .opt-emoji {
+      font-size: 22px;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%;
+      padding: 17px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 22px;
+      transition: filter 0.18s;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.01em;
+    }
+    .btn:hover { filter: brightness(0.92); }
+    .btn-red { background: #dc3535; color: #fff; }
+    .btn-green { background: #25a244; color: #fff; }
+
+    /* ── Interstitial ── */
+    .inter-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+    }
+    .inter-label {
+      font-size: 13px;
+      color: #c07830;
+      text-align: center;
+      font-weight: 500;
+    }
+    .inter-title {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .inter-text {
+      font-size: 15px;
+      color: #444;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    /* ── Lead Capture ── */
+    .lead-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #999;
+      margin-bottom: 14px;
+    }
+    .lead-title {
+      font-size: 17px;
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+    .lead-sub {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1.5px solid #e4e4e4;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      color: #1a1a1a;
+      outline: none;
+      margin-bottom: 16px;
+      transition: border-color 0.18s;
+    }
+    .form-input:focus { border-color: #c07830; }
+    .form-input::placeholder { color: #c0c0c0; }
+    .lead-disclaimer {
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    /* ── Loading ── */
+    .load-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .load-title { font-size: 16px; font-weight: 600; }
+    .load-pct { font-size: 16px; font-weight: 700; }
+    .load-bar-wrap {
+      height: 8px;
+      background: #e4e4e4;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+    .load-bar-fill {
+      height: 100%;
+      background: #dc3535;
+      border-radius: 6px;
+      transition: width 0.25s ease;
+    }
+    .load-while {
+      font-size: 14px;
+      color: #c07830;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .load-social-proof {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 18px;
+    }
+
+    /* ── Testimonials ── */
+    .testimonial-card {
+      background: #f7f7f7;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .t-stars { color: #f5a623; font-size: 14px; margin-bottom: 2px; }
+    .t-date { font-size: 12px; color: #aaa; margin-bottom: 10px; }
+    .t-text { font-size: 13px; color: #444; line-height: 1.65; }
+
+    /* ── WhatsApp Chat bubbles ── */
+    .chat-wrap {
+      background: #ddd6ce;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin: 14px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bubble {
+      background: #fff;
+      border-radius: 8px 8px 8px 2px;
+      padding: 8px 10px 6px;
+      max-width: 88%;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #1a1a1a;
+    }
+    .bubble-time {
+      font-size: 10px;
+      color: #aaa;
+      text-align: right;
+      margin-top: 3px;
+    }
+
+    /* ── Result ── */
+    .result-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #c07830;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .result-subtitle {
+      font-size: 17px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+    .result-text {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.75;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .result-section-title {
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      margin: 22px 0 8px;
+    }
+    .result-section-text {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.7;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .result-note {
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      text-align: center;
+      font-size: 11px;
+      color: #ccc;
+      padding: 20px 24px;
+      border-top: 1px solid #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="progress-wrap">
+  <div class="progress-fill" id="progressFill" style="width:4%"></div>
+</div>
+
+<div id="app">
+
+  <!-- ════════════════════════════════════════
+       TELA 0 — INTRO
+  ════════════════════════════════════════ -->
+  <div class="screen active" id="screen-intro">
+    <div class="intro-body">
+      <h1 class="intro-title">
+        Descubra se é possível recuperar a <span class="hl">conexão</span> no seu casamento
+      </h1>
+      <p class="intro-subtitle">
+        8 perguntas rápidas para entender em qual estágio sua relação está e qual é o próximo passo.
+      </p>
+      <p class="intro-note">Leva 3 minutos, é 100% confidencial e o resultado é imediato.</p>
+      <button class="btn btn-red" onclick="startQuiz()">Quero descobrir agora →</button>
+      <p class="intro-note">Baseado no Método Reconexão da Psicóloga Ingrid Rodrigues. Não substitui avaliação clínica.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TELA 1 — PERGUNTAS (reutilizada)
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-question">
+    <h2 class="q-title" id="qTitle"></h2>
+    <p class="q-sub" id="qSub"></p>
+    <div class="options" id="optionsWrap"></div>
+    <button class="btn btn-red" id="btnContinuar" style="display:none" onclick="nextStep()">Continuar</button>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TELA 2 — INTERSTICIAL
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-inter">
+    <div class="inter-body">
+      <p class="inter-label">Método Reconexão</p>
+      <h2 class="inter-title">Entendi o que está acontecendo com vocês.</h2>
+      <p class="inter-text">
+        A comunicação foi ficando mais rasa. Os momentos juntos viraram rotina. E hoje dá pra sentir que estão <strong>no mesmo espaço, mas não no mesmo lugar.</strong>
+      </p>
+      <p class="inter-text">
+        Isso tem nome, e o <strong class="hl">Método Reconexão</strong>, baseado em evidência científica, foi desenvolvido exatamente para esse padrão.
+      </p>
+      <p class="inter-text">
+        Falta só mais uma pergunta para o seu diagnóstico completo.
+      </p>
+      <button class="btn btn-red" onclick="nextStep()">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TELA 3 — CAPTURA DE LEAD
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-lead">
+    <p class="lead-label">QUASE LÁ</p>
+    <p class="lead-title">
+      Com base nas suas respostas, identificamos um <strong>padrão específico</strong> na sua relação. Seu diagnóstico completo está pronto.
+    </p>
+    <p class="lead-sub">Preencha abaixo para receber seu resultado personalizado.</p>
+
+    <label class="form-label">Seu nome</label>
+    <input type="text" class="form-input" id="fName" placeholder="Digite seu nome..." />
+
+    <label class="form-label">E-mail</label>
+    <input type="email" class="form-input" id="fEmail" placeholder="Digite seu e-mail..." />
+
+    <label class="form-label">Seu Whatsapp (com DDD)</label>
+    <input type="tel" class="form-input" id="fPhone" placeholder="Digite seu celular..." />
+
+    <button class="btn btn-red" onclick="submitLead()">Ver meu diagnóstico →</button>
+    <p class="lead-disclaimer">Seus dados são confidenciais e não serão compartilhados.</p>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TELA 4 — LOADING / PROVA SOCIAL
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-loading">
+    <div class="load-header">
+      <span class="load-title">Calculando seu diagnóstico</span>
+      <span class="load-pct" id="loadPct">0%</span>
+    </div>
+    <div class="load-bar-wrap">
+      <div class="load-bar-fill" id="loadBar" style="width:0%"></div>
+    </div>
+    <p class="load-while">Enquanto preparamos seu resultado...</p>
+    <p class="load-social-proof">Veja o que dizem casais que já passaram pelo processo:</p>
+
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-date">3 meses atrás</div>
+      <p class="t-text">
+        Fazer a terapia de casal com a Ingrid foi a melhor experiência de terapia que já tive, ela nos acolheu e escutou com empatia e paciência. Além de conseguir conversar sobre problemas difíceis em um ambiente seguro, conseguimos pensar juntos em ferramentas que funcionam pra nós. Hoje conseguimos conversar calmamente sobre questões, identificar quando o outro precisa de tempo e espaço, o melhor momento pra falar, a melhor forma de falar… enfim. Nos sentimos um casal realmente forte agora, porque conseguimos entender um ao outro de verdade. Eu não sabia que poderíamos superar o que superamos… e estamos muito mais felizes e unidos.
+      </p>
+    </div>
+
+    <div class="chat-wrap">
+      <div class="bubble">A terapia está sendo muito importante pra gente<div class="bubble-time">16:00</div></div>
+      <div class="bubble">Melhorou uns 200% as coisas<div class="bubble-time">16:04</div></div>
+      <div class="bubble">E eu agradeço muito a clínica<div class="bubble-time">16:09</div></div>
+      <div class="bubble">Salvaram nossa relação<div class="bubble-time">16:09</div></div>
+    </div>
+
+    <div class="testimonial-card">
+      <p class="t-text">
+        Ingrid eu estou gostando muito das nossas sessões. Eu já fiz terapia durante muitos anos e achei sua abordagem muito direta, isso me ajuda muito. Quer dizer, temos um problema real e precisamos de soluções reais e possíveis para esse problema. Acredito que já estamos colhendo os frutos da terapia, pois tenho hoje um direcionamento claro. Eu realmente estou amando! Vejo evolução no relacionamento mas especialmente em mim, acho que precisava dessa oportunidade pra me permitir mudar, mexer em algumas coisas. E fazer isso com meu parceiro me ajudando e me apoiando é bem mais fácil. To muito feliz 🥹 e acho que isso vai mudar nossa vida pra sempre!
+      </p>
+    </div>
+
+    <div class="chat-wrap">
+      <div class="bubble" style="max-width:100%">
+        Ingrid eu estou gostando muito das nossas sessões. Eu já fiz terapia durante muitos anos e achei sua abordagem muito direta, isso me ajuda muito. Quer dizer, temos um problema real e precisamos de soluções reais e possíveis para esse problema. Acredito que já estamos colhendo os frutos da terapia, pois tenho hoje um direcionamento claro. Eu realmente estou amando! Vejo evolução no relacionamento mas especialmente em mim, acho que precisava dessa oportunidade pra me permitir mudar, mexer em algumas coisas. E fazer isso com meu parceiro me ajudando e me apoiando é bem mais fácil. To muito feliz 🥹 e acho que isso vai mudar nossa vida pra sempre!
+        <div class="bubble-time">21:10</div>
+      </div>
+      <div class="bubble">Estou 100% disponível e entregue pro processo! Você tem a minha total confiança!<div class="bubble-time">21:11</div></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TELA 5 — RESULTADO
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-result">
+    <h1 class="result-title" id="resTitle">Desconexão Significativa</h1>
+    <p class="result-subtitle" id="resSubtitle">
+      Sua relação está pedindo ajuda, <span class="hl">e você já sabe disso.</span>
+    </p>
+    <p class="result-text" id="resText1"></p>
+    <p class="result-text" id="resText2"></p>
+
+    <h3 class="result-section-title">Converse com a equipe da Clínica Ingrid Rodrigues hoje</h3>
+    <p class="result-section-text">
+      Nossa equipe atua com o Método Reconexão para casais que querem restaurar a conexão emocional, inclusive aqueles que já tentaram outras abordagens sem resultado.
+    </p>
+
+    <button class="btn btn-green" onclick="goWhatsApp()">Quero falar com a equipe hoje →</button>
+    <p class="result-note">Nossa equipe costuma responder em até 20 minutos e agenda a primeira conversa no mesmo dia ou no dia seguinte.</p>
+  </div>
+
+  <div class="site-footer">© 2026 · Criado via inlead.digital | Central de anúncios</div>
+
+</div><!-- /#app -->
+
+<script>
+  /* ──────────────────────────────────────────────
+     CONFIGURAÇÕES — altere aqui para customizar
+  ────────────────────────────────────────────── */
+  const WHATSAPP_NUMBER  = '5534991440478'; // Número sem + e sem espaços
+  const WHATSAPP_MSG     = 'Olá! Acabei de preencher o teste de desconexão no relacionamento e gostaria de agendar minha sessão inicial.';
+
+  /* ──────────────────────────────────────────────
+     PERGUNTAS DO QUIZ
+     score: 1 (saudável) → 4 (crítico)
+  ────────────────────────────────────────────── */
+  const QUESTIONS = [
+    {
+      text: 'O que você mais <span class="hl">sente falta</span> no seu casamento hoje?',
+      options: [
+        { emoji: '😔', text: 'A <span class="hl">leveza</span>, estar juntos era fácil e gostoso',           score: 1 },
+        { emoji: '😐', text: 'A <span class="hl">conversa de verdade</span>, se falar e se sentir ouvido',    score: 2 },
+        { emoji: '💔', text: 'O <span class="hl">carinho e a intimidade</span> que foram sumindo',            score: 3 },
+        { emoji: '😢', text: 'A sensação de sermos <span class="hl">uma equipe</span>',                       score: 4 },
+      ]
+    },
+    {
+      text: 'O que vocês já <span class="hl">tentaram</span> para mudar isso?',
+      options: [
+        { emoji: '🙂', text: 'Conversamos e <span class="hl">melhorou um pouco</span>',                       score: 1 },
+        { emoji: '🗣️', text: 'Conversamos, mas <span class="hl">terminamos sempre no mesmo lugar</span>',     score: 2 },
+        { emoji: '🤝', text: 'Já tentamos terapia, <span class="hl">mas paramos</span>',                      score: 3 },
+        { emoji: '😢', text: '<span class="hl">Nada</span>, sabemos que está errado, mas travamos',           score: 4 },
+      ]
+    },
+    {
+      text: 'Como está a <span class="hl">comunicação</span> entre vocês?',
+      options: [
+        { emoji: '😃', text: 'Conversamos sobre tudo, <span class="hl">inclusive o difícil</span>',           score: 1 },
+        { emoji: '💬', text: 'Conversamos, mas <span class="hl">evitamos o que importa</span>',               score: 2 },
+        { emoji: '😔', text: 'Só o essencial, <span class="hl">nada de verdade</span>',                       score: 3 },
+        { emoji: '😢', text: '<span class="hl">Quase não nos comunicamos</span> mais',                        score: 4 },
+      ]
+    },
+    {
+      text: 'Quando discutem, <span class="hl">como termina</span>?',
+      options: [
+        { emoji: '🙂', text: 'Chegamos a um entendimento',                                                    score: 1 },
+        { emoji: '😐', text: 'Um cede, mas o assunto fica no ar',                                             score: 2 },
+        { emoji: '💔', text: 'Termina sem resolução, ninguém se sente ouvido',                                score: 3 },
+        { emoji: '😢', text: 'Vira agressão verbal ou silêncio de dias',                                      score: 4 },
+      ]
+    },
+    {
+      text: 'Como está a <span class="hl">intimidade</span> entre vocês?',
+      options: [
+        { emoji: '😊', text: 'Próximos, <span class="hl">há afeto e desejo</span> entre nós',                 score: 1 },
+        { emoji: '😐', text: 'Diminuiu, <span class="hl">mas ainda existe</span>',                            score: 2 },
+        { emoji: '💔', text: 'Viramos <span class="hl">companheiros de rotina</span> sem conexão',            score: 3 },
+        { emoji: '😢', text: 'Nos sentimos <span class="hl">como estranhos</span>',                           score: 4 },
+      ]
+    },
+    {
+      text: 'Vocês ainda <span class="hl">constroem coisas juntos</span>?',
+      options: [
+        { emoji: '🙂', text: 'Sim, <span class="hl">planejamos e sonhamos</span> juntos',                     score: 1 },
+        { emoji: '😐', text: 'Às vezes, mais <span class="hl">obrigação</span> do que desejo',                score: 2 },
+        { emoji: '💔', text: 'Raramente, <span class="hl">cada um no seu mundo</span>',                       score: 3 },
+        { emoji: '😢', text: 'Não, <span class="hl">não conseguimos imaginar</span> um futuro juntos',        score: 4 },
+      ]
+    },
+    {
+      text: 'Você se sente <span class="hl">visto(a) e valorizado(a)</span>?',
+      options: [
+        { emoji: '❤️',  text: 'Sim, <span class="hl">me sinto importante</span> para ele/ela',                score: 1 },
+        { emoji: '😟', text: 'Às vezes, <span class="hl">é inconsistente</span>',                             score: 2 },
+        { emoji: '💔', text: 'Raramente, me sinto <span class="hl">invisível</span>',                         score: 3 },
+        { emoji: '😢', text: 'Não, me sinto <span class="hl">ignorada ou tolerada</span>',                    score: 4 },
+      ]
+    },
+    // Após o intersticial
+    {
+      text: 'Como você descreveria sua <span class="hl">urgência</span> em mudar isso?',
+      options: [
+        { emoji: '❤️',  text: 'Urgente, sinto que a relação está em risco real',                              score: 4 },
+        { emoji: '😟', text: 'Importante, quero agir antes que piore',                                        score: 3 },
+        { emoji: '💔', text: 'Quero melhorar, mas ainda não é crise',                                         score: 2 },
+        { emoji: '😢', text: 'Estou explorando, quero entender onde estamos',                                 score: 1 },
+      ]
+    },
+    // Última pergunta (2 opções, sem emoji)
+    {
+      text: 'Você acredita que as coisas vão <span class="hl">melhorar sozinhas</span> se continuarem como estão?',
+      subtitle: 'Seja honesto(a) com você mesmo(a).',
+      noEmoji: true,
+      options: [
+        { text: '<span class="hl">Não</span>, sei que algo precisa mudar agora',                              score: 2 },
+        { text: 'Tenho esperança que <span class="hl">o tempo resolva</span>',                                 score: 1 },
+      ]
+    },
+  ];
+
+  // Após qual índice (0-based) exibir o intersticial
+  const INTERSTITIAL_AFTER = 6;
+
+  /* ──────────────────────────────────────────────
+     RESULTADOS — baseados na pontuação total
+     Mín: 9 pontos | Máx: 36 pontos
+  ────────────────────────────────────────────── */
+  const RESULTS = [
+    {
+      range: [9, 17],
+      title: 'Conexão em Alerta',
+      subtitle: 'Sua relação ainda tem base, <span class="hl">mas precisa de atenção.</span>',
+      text1: 'Você e seu parceiro(a) ainda se conectam, mas há sinais de que algo está se enfraquecendo. A comunicação perdeu um pouco da profundidade, e pequenos afastamentos podem crescer se não forem trabalhados com cuidado.',
+      text2: 'O <strong class="hl">Método Reconexão</strong> foi desenvolvido exatamente para casais que estão nesse estágio — quando ainda há amor, mas falta a ferramenta certa para fortalecer o vínculo antes que a distância aumente.',
+    },
+    {
+      range: [18, 26],
+      title: 'Desconexão Progressiva',
+      subtitle: 'A distância foi crescendo, <span class="hl">e você já sente isso.</span>',
+      text1: 'O que antes era leve foi ficando pesado. As conversas perderam profundidade, a intimidade diminuiu, e a sensação de parceria foi cedendo lugar à rotina. Isso não significa que está perdido — significa que chegou a hora de agir.',
+      text2: 'O Método Reconexão é baseado na IBCT, uma das abordagens mais comprovadas pela ciência para <span class="hl">desconexão progressiva</span>, e os resultados aparecem em <span class="hl">3 a 6 meses</span> de processo comprometido. O que separa os casais que se reconectam dos que não conseguem é a <span class="hl">decisão de agir</span>.',
+    },
+    {
+      range: [27, 36],
+      title: 'Desconexão Significativa',
+      subtitle: 'Sua relação está pedindo ajuda, <span class="hl">e você já sabe disso.</span>',
+      text1: 'Você sente que algo se quebrou. A conversa travou, o carinho sumiu, e tem dias em que parece que estão mais como <strong>colegas de casa do que como casal</strong>. Essa sensação de estar sozinho mesmo tendo alguém do lado é real e dolorosa. Mas casais nessa situação conseguem se reconectar, sim.',
+      text2: 'O Método Reconexão é baseado na IBCT, uma das abordagens mais comprovadas pela ciência para <span class="hl">desconexão profunda</span>, e os resultados aparecem em <span class="hl">3 a 6 meses</span> de processo comprometido. Essa oportunidade existe agora. O que separa os casais que se reconectam dos que não conseguem não é o tamanho do problema, é a <span class="hl">decisão de agir</span>.',
+    },
+  ];
+
+  /* ──────────────────────────────────────────────
+     ESTADO
+  ────────────────────────────────────────────── */
+  let currentQ        = 0;
+  let answers         = [];  // { score }
+  let interShown      = false;
+  let afterInter      = false;
+
+  /* Passos do fluxo, em ordem */
+  // 'intro' → q0..q6 → 'inter' → q7..q8 → 'lead' → 'loading' → 'result'
+
+  /* ──────────────────────────────────────────────
+     FUNÇÕES UTILITÁRIAS
+  ────────────────────────────────────────────── */
+  function setProgress(pct) {
+    document.getElementById('progressFill').style.width = pct + '%';
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  /* ──────────────────────────────────────────────
+     INÍCIO
+  ────────────────────────────────────────────── */
+  function startQuiz() {
+    currentQ   = 0;
+    answers    = [];
+    interShown = false;
+    afterInter = false;
+    renderQuestion(0);
+  }
+
+  /* ──────────────────────────────────────────────
+     RENDERIZA UMA PERGUNTA
+  ────────────────────────────────────────────── */
+  function renderQuestion(idx) {
+    const q = QUESTIONS[idx];
+
+    document.getElementById('qTitle').innerHTML = q.text;
+
+    const subEl = document.getElementById('qSub');
+    if (q.subtitle) {
+      subEl.textContent = q.subtitle;
+      subEl.style.display = 'block';
+    } else {
+      subEl.style.display = 'none';
+    }
+
+    const wrap = document.getElementById('optionsWrap');
+    wrap.innerHTML = '';
+    answers[idx] = null;
+
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option';
+
+      if (q.noEmoji) {
+        btn.style.paddingLeft = '20px';
+        btn.innerHTML = `<span>${opt.text}</span>`;
+      } else {
+        btn.innerHTML = `<span class="opt-emoji">${opt.emoji}</span><span>${opt.text}</span>`;
+      }
+
+      btn.addEventListener('click', () => {
+        wrap.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+        btn.classList.add('selected');
+        answers[idx] = { score: opt.score };
+        document.getElementById('btnContinuar').style.display = 'block';
+      });
+
+      wrap.appendChild(btn);
+    });
+
+    // Barra de progresso: Q0 = 10% ... Q8 = 88%
+    const pct = 10 + Math.round((idx / (QUESTIONS.length - 1)) * 78);
+    setProgress(pct);
+
+    document.getElementById('btnContinuar').style.display = 'none';
+    showScreen('screen-question');
+  }
+
+  /* ──────────────────────────────────────────────
+     AVANÇA O FLUXO
+  ────────────────────────────────────────────── */
+  function nextStep() {
+    const screen = document.querySelector('.screen.active').id;
+
+    // Saindo do intersticial
+    if (screen === 'screen-inter') {
+      afterInter = true;
+      currentQ = INTERSTITIAL_AFTER + 1;
+      renderQuestion(currentQ);
+      return;
+    }
+
+    // Saindo de uma pergunta
+    if (screen === 'screen-question') {
+      // Após Q6 (índice 6) → mostra intersticial
+      if (currentQ === INTERSTITIAL_AFTER && !interShown) {
+        interShown = true;
+        setProgress(76);
+        showScreen('screen-inter');
+        return;
+      }
+
+      currentQ++;
+
+      // Chegou ao fim das perguntas → lead capture
+      if (currentQ >= QUESTIONS.length) {
+        setProgress(92);
+        showScreen('screen-lead');
+        return;
+      }
+
+      renderQuestion(currentQ);
+    }
+  }
+
+  /* ──────────────────────────────────────────────
+     SUBMIT DO FORMULÁRIO
+  ────────────────────────────────────────────── */
+  function submitLead() {
+    const name  = document.getElementById('fName').value.trim();
+    const email = document.getElementById('fEmail').value.trim();
+    const phone = document.getElementById('fPhone').value.trim();
+
+    if (!name || !email || !phone) {
+      alert('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    // Aqui você pode enviar os dados para seu CRM / webhook n8n
+    // fetch('/api/lead', { method:'POST', body: JSON.stringify({ name, email, phone, score: calcScore() }) });
+
+    setProgress(96);
+    showScreen('screen-loading');
+    animateLoading();
+  }
+
+  /* ──────────────────────────────────────────────
+     ANIMAÇÃO DE LOADING
+  ────────────────────────────────────────────── */
+  function animateLoading() {
+    let pct = 0;
+    const barEl = document.getElementById('loadBar');
+    const pctEl = document.getElementById('loadPct');
+
+    const tick = setInterval(() => {
+      pct += Math.random() * 9 + 3;
+      if (pct >= 100) {
+        pct = 100;
+        clearInterval(tick);
+        setTimeout(showResult, 700);
+      }
+      const v = Math.min(Math.round(pct), 100);
+      barEl.style.width = v + '%';
+      pctEl.textContent = v + '%';
+    }, 220);
+  }
+
+  /* ──────────────────────────────────────────────
+     CALCULA PONTUAÇÃO E EXIBE RESULTADO
+  ────────────────────────────────────────────── */
+  function calcScore() {
+    return answers.reduce((sum, a) => sum + (a ? a.score : 0), 0);
+  }
+
+  function showResult() {
+    const score = calcScore();
+    const result = RESULTS.find(r => score >= r.range[0] && score <= r.range[1])
+                   || RESULTS[RESULTS.length - 1]; // fallback: resultado mais severo
+
+    document.getElementById('resTitle').textContent    = result.title;
+    document.getElementById('resSubtitle').innerHTML   = result.subtitle;
+    document.getElementById('resText1').innerHTML      = result.text1;
+    document.getElementById('resText2').innerHTML      = result.text2;
+
+    setProgress(100);
+    showScreen('screen-result');
+  }
+
+  /* ──────────────────────────────────────────────
+     BOTÃO WHATSAPP
+  ────────────────────────────────────────────── */
+  function goWhatsApp() {
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MSG)}`;
+    window.open(url, '_blank');
+  }
+</script>
+
+</body>
+</html>
