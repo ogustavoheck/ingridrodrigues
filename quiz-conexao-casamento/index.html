@@ -495,6 +495,18 @@
   const WHATSAPP_MSG     = 'Olá! Acabei de preencher o teste de desconexão no relacionamento e gostaria de agendar minha sessão inicial.';
   const WEBHOOK_URL      = 'https://n8n.ghxmkt.com/webhook/quiz-ingrid-leads';
 
+  /* Lê UTMs da URL no momento do carregamento da página */
+  const UTM = (() => {
+    const p = new URLSearchParams(window.location.search);
+    return {
+      utm_source  : p.get('utm_source')   || '',
+      utm_campaign: p.get('utm_campaign') || '',
+      utm_medium  : p.get('utm_medium')   || '',
+      utm_content : p.get('utm_content')  || '',
+      utm_term    : p.get('utm_term')     || '',
+    };
+  })();
+
   /* ──────────────────────────────────────────────
      PERGUNTAS DO QUIZ
      score: 1 (saudável) → 4 (crítico)
@@ -774,8 +786,13 @@
       p5        : answers[4]?.text || '',
       p6        : answers[5]?.text || '',
       p7        : answers[6]?.text || '',
-      p8        : answers[7]?.text || '',
-      p9        : answers[8]?.text || '',
+      p8          : answers[7]?.text || '',
+      p9          : answers[8]?.text || '',
+      utm_source  : UTM.utm_source,
+      utm_campaign: UTM.utm_campaign,
+      utm_medium  : UTM.utm_medium,
+      utm_content : UTM.utm_content,
+      utm_term    : UTM.utm_term,
     };
 
     // Dispara webhook de forma não-bloqueante (não trava o funil se falhar)
