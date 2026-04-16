@@ -626,7 +626,7 @@
   ────────────────────────────────────────────── */
   const WHATSAPP_NUMBER  = '5534991440478'; // Número sem + e sem espaços
   const WHATSAPP_MSG     = 'Olá! Acabei de preencher o teste de desconexão no relacionamento e gostaria de agendar minha sessão inicial.';
-  const WEBHOOK_URL      = 'https://n8n.ghxmkt.com/webhook/quiz-ingrid-leads';
+  const WEBHOOK_URL      = 'https://n8n.ghxmkt.com/webhook/86119e93-6026-4f49-b149-de50edf5ad8a';
 
   /* Lê UTMs da URL no momento do carregamento da página */
   const UTM = (() => {
@@ -997,7 +997,7 @@
 
     // Webhook n8n — registra timestamp do clique na planilha
     if (window._leadEmail) {
-      fetch('https://n8n.ghxmkt.com/webhook/quiz-ingrid-wa-click', {
+      fetch('https://n8n.ghxmkt.com/webhook/25e59324-852a-4866-9e91-fd64a51e8b76', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body   : JSON.stringify({ email: window._leadEmail, timestamp: new Date().toISOString() }),
