@@ -401,7 +401,7 @@
         if (p.get('utm_term'))     setCookie('cookieUtmTerm',     p.get('utm_term'),     TWO_YEARS);
       }
       return {
-        utm_source:   p.get('utm_source')   || getCookie('cookieUtmSource')   || (document.referrer ? getReferrerHost() : 'direto'),
+        utm_source:   p.get('utm_source')   || getCookie('cookieUtmSource')   || 'organico',
         utm_medium:   p.get('utm_medium')   || getCookie('cookieUtmMedium')   || '',
         utm_campaign: p.get('utm_campaign') || getCookie('cookieUtmCampaign') || '',
         utm_content:  p.get('utm_content')  || getCookie('cookieUtmContent')  || '',
