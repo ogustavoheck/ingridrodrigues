@@ -401,7 +401,7 @@
         if (p.get('utm_term'))     setCookie('cookieUtmTerm',     p.get('utm_term'),     TWO_YEARS);
       }
       return {
-        utm_source:   p.get('utm_source')   || getCookie('cookieUtmSource')   || 'organico',
+        utm_source:   p.get('utm_source')   || getCookie('cookieUtmSource')   || (document.referrer ? getReferrerHost() : 'direto'),
         utm_medium:   p.get('utm_medium')   || getCookie('cookieUtmMedium')   || '',
         utm_campaign: p.get('utm_campaign') || getCookie('cookieUtmCampaign') || '',
         utm_content:  p.get('utm_content')  || getCookie('cookieUtmContent')  || '',
@@ -410,13 +410,49 @@
     }
     var utms = captureAndPersistUtms();
 
-    function saveLeadCookies(userData) {
-      var parts = (userData.name || '').trim().split(/\s+/);
-      setCookie('LeadEmail',     userData.email || '',                                 ONE_YEAR);
-      setCookie('LeadPhone',     userData.phone || '',                                 ONE_YEAR);
-      setCookie('LeadFirstName', parts[0] || '',                                       ONE_YEAR);
-      setCookie('LeadLastName',  parts.length > 1 ? parts[parts.length - 1] : '',     ONE_YEAR);
+    // Propaga UTMs e sck nos links internos do mesmo domínio
+    // Não usa history.replaceState — o Meta Pixel dispararia PageView duplicado
+    function propagateParams() {
+      var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+      var links = document.getElementsByTagName('a');
+      for (var i = 0; i < links.length; i++) {
+        var el = links[i];
+        var rawHref = el.getAttribute('href') || '';
+        if (!rawHref || rawHref.charAt(0) === '#') continue;
+        try {
+          var url = new URL(el.href);
+          if (url.hostname !== window.location.hostname &&
+              url.hostname.indexOf('ingridrodriguespsi.com') === -1) continue;
+          keys.forEach(function(k) { if (utms[k] && !url.searchParams.has(k)) url.searchParams.set(k, utms[k]); });
+          if (!url.searchParams.has('sck')) url.searchParams.set('sck', sck);
+          el.href = url.toString();
+        } catch(e){}
+      }
     }
+    propagateParams();
+    document.addEventListener('DOMContentLoaded', propagateParams);
+
+    // Persiste geo e gênero retornados pelo Worker no sessionStorage
+    function storeEnrichment(enrichment) {
+      if (!enrichment) return;
+      if (enrichment.geo)    try { sessionStorage.setItem('_geo',    JSON.stringify(enrichment.geo)); } catch(e){}
+      if (enrichment.gender) try { sessionStorage.setItem('_gender', enrichment.gender); } catch(e){}
+    }
+
+    function saveLeadCookies(userData, enrichment) {
+      var parts = (userData.name || '').trim().split(/\s+/);
+      setCookie('LeadEmail',     userData.email || '',                                ONE_YEAR);
+      setCookie('LeadPhone',     userData.phone || '',                                ONE_YEAR);
+      setCookie('LeadFirstName', parts[0] || '',                                      ONE_YEAR);
+      setCookie('LeadLastName',  parts.length > 1 ? parts[parts.length - 1] : '',    ONE_YEAR);
+      var geo    = (enrichment && enrichment.geo)    || tryParse(sessionStorage.getItem('_geo')) || {};
+      var gender = (enrichment && enrichment.gender) || sessionStorage.getItem('_gender') || '';
+      setCookie('LeadGenero',  gender,           ONE_YEAR);
+      setCookie('LeadCity',    geo.city    || '', ONE_YEAR);
+      setCookie('LeadState',   geo.region  || '', ONE_YEAR);
+      setCookie('LeadCountry', geo.country || '', ONE_YEAR);
+    }
+    function tryParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
 
     // ── PageView ──────────────────────────────
     var pvId = genId();
@@ -430,15 +466,17 @@
         fbp: getCookie('_fbp'), fbc: getCookie('_fbc'),
         external_id: sck, utms: utms, user_data: {}
       })
-    }).catch(function(){});
+    }).then(function(r){ return r.json(); })
+      .then(function(d){ storeEnrichment(d._enrichment); })
+      .catch(function(){});
 
     // ── Lead — disparado no submit do formulário ──
     window.trackLead = async function(userData) {
       var eventId = genId();
       fbq('track', 'Lead', {}, { eventID: eventId });
-      saveLeadCookies(userData);
+      var enrichment = null;
       try {
-        await Promise.race([
+        var res = await Promise.race([
           fetch(WORKER_URL, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -450,7 +488,10 @@
           }),
           new Promise(function(_, rej){ setTimeout(rej, 400); })
         ]);
+        var json = await res.json();
+        enrichment = json._enrichment || null;
       } catch(e){}
+      saveLeadCookies(userData, enrichment);
     };
 
     // ── Contact — disparado ao clicar em ir para o WhatsApp ──
