@@ -690,32 +690,46 @@
       .then(function(d){ storeEnrichment(d._enrichment); })
       .catch(function(){});
 
-    window.trackLead = async function(userData) {
-      var eventId = genId();
-      fbq('track', 'Lead', {}, { eventID: eventId });
+    // Expõe utilitários para uso no submit do form (escopo handleSubmit)
+    window.saveLeadCookies = saveLeadCookies;
+    window.getCookieByName  = getCookie;
+    window.getSck           = function(){ return sck; };
+    window.getUtms          = function(){ return utms; };
+    window.LEAD_ENDPOINT    = 'https://lp.ingridrodriguespsi.com/lead';
 
-      var enrichment = null;
-      try {
-        var res = await Promise.race([
-          fetch(WORKER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_name: 'Lead', event_id: eventId,
-              event_source_url: window.location.href,
-              fbp: getCookie('_fbp'), fbc: getCookie('_fbc'),
-              external_id: sck, utms: utms, user_data: userData
-            })
-          }),
-          new Promise(function(_, rej){ setTimeout(rej, 400); })
-        ]);
-        var json = await res.json();
-        enrichment = json._enrichment || null;
-      } catch(e){}
+    // ===== TURNSTILE — anti-bot invisível =====
+    var TURNSTILE_SITEKEY = '0x4AAAAAADEO7dNQ3JwkNMuh';
+    var _tsWidgetId = null;
+    var _tsResolve = null, _tsReject = null;
 
-      saveLeadCookies(userData, enrichment);
+    window.onTurnstileLoad = function() {
+      if (!window.turnstile) return;
+      _tsWidgetId = window.turnstile.render('#cf-turnstile-widget', {
+        sitekey:  TURNSTILE_SITEKEY,
+        size:     'invisible',
+        callback:           function(token){ if (_tsResolve) _tsResolve(token); },
+        'error-callback':   function(){ if (_tsReject) _tsReject(new Error('turnstile error')); },
+        'timeout-callback': function(){ if (_tsReject) _tsReject(new Error('turnstile timeout')); }
+      });
+    };
+
+    window.getTurnstileToken = function() {
+      return new Promise(function(resolve, reject) {
+        if (!window.turnstile || _tsWidgetId === null) {
+          reject(new Error('turnstile not loaded')); return;
+        }
+        _tsResolve = resolve; _tsReject = reject;
+        try { window.turnstile.reset(_tsWidgetId); } catch(e){}
+        window.turnstile.execute(_tsWidgetId);
+        setTimeout(function(){
+          if (_tsReject === reject) reject(new Error('turnstile timeout 10s'));
+        }, 10000);
+      });
     };
   </script>
+
+  <!-- Turnstile script (carrega async; chama window.onTurnstileLoad quando pronto) -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
 </head>
 <body>
 
@@ -839,6 +853,7 @@
             <option value="faturamento_travado">Faturamento travado mesmo com agenda cheia</option>
           </select>
         </div>
+        <div id="cf-turnstile-widget" style="display:flex;justify-content:center;margin:0 0 12px;"></div>
         <button class="submit-btn" onclick="handleSubmit()">QUERO PARTICIPAR DA AULA</button>
         <div class="form-trust">
           <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
@@ -891,35 +906,76 @@
       setLoading(true);
 
       try {
-        const WEB3FORMS_KEY = 'd1bb8d8b-7570-4294-995e-caa6356fc1a5';
+        // 1. Turnstile — confirma que é humano
+        let tsToken;
+        try {
+          tsToken = await window.getTurnstileToken();
+        } catch (e) {
+          console.error('Turnstile falhou:', e);
+          alert('Validação anti-bot falhou. Recarregue a página e tente de novo.');
+          setLoading(false);
+          return;
+        }
 
-        const response = await fetch('https://api.web3forms.com/submit', {
+        // 2. Pixel client-side — mesmo event_id do server (dedup)
+        const leadEventId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        if (typeof fbq !== 'undefined') {
+          fbq('track', 'Lead', {}, { eventID: leadEventId });
+        }
+
+        // 3. /lead — Worker valida Turnstile + dispara CAPI Lead + n8n
+        const leadRes = await fetch(window.LEAD_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            access_key: WEB3FORMS_KEY,
-            subject: 'Nova inscrição — Aula Escala Psi',
-            from_name: 'Landing Page Escala Psi',
-            nome: nome,
-            whatsapp: whatsapp,
-            email: email,
-            qualificacao: qualificacao || 'Não respondeu',
+            turnstile_token: tsToken,
+            event_id: leadEventId,
+            event_source_url: window.location.href,
+            fbp: window.getCookieByName('_fbp'),
+            fbc: window.getCookieByName('_fbc'),
+            external_id: window.getSck(),
+            utms: window.getUtms(),
+            form: { nome: nome, email: email, whatsapp: whatsapp, qualificacao: qualificacao }
           })
         });
+        const leadData = await leadRes.json();
 
-        const result = await response.json();
-
-        if (result.success) {
-          await window.trackLead({ name: nome, email: email, phone: whatsapp });
-          window.location.href = 'obrigado.html';
-        } else {
-          alert('Erro ao enviar. Tente novamente.');
+        if (!leadData.success) {
+          console.error('Validação do lead falhou:', leadData);
+          alert('Erro ao validar inscrição. Tente novamente.');
           setLoading(false);
+          return;
         }
+
+        if (window.saveLeadCookies) {
+          window.saveLeadCookies({ name: nome, email: email, phone: whatsapp }, leadData._enrichment);
+        }
+
+        // 4. Web3Forms — envia o email pra Ingrid (client-side: plano free não aceita server-side)
+        const WEB3FORMS_KEY = 'd1bb8d8b-7570-4294-995e-caa6356fc1a5';
+        try {
+          await fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_key: WEB3FORMS_KEY,
+              subject: 'Nova inscrição — Aula Escala Psi',
+              from_name: 'Landing Page Escala Psi',
+              nome: nome, whatsapp: whatsapp, email: email,
+              qualificacao: qualificacao || 'Não respondeu',
+            })
+          });
+        } catch (e) {
+          // Não bloqueia — o lead já está no n8n via /lead
+          console.warn('Web3Forms falhou, mas lead foi gravado no n8n:', e);
+        }
+
+        window.location.href = 'obrigado.html';
+
       } catch (error) {
         console.error('Erro:', error);
-        try { await window.trackLead({ name: nome, email: email, phone: whatsapp }); } catch(e){}
-        window.location.href = 'obrigado.html';
+        alert('Erro ao enviar. Tente novamente.');
+        setLoading(false);
       }
     }
   </script>
