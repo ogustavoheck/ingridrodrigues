@@ -918,9 +918,11 @@
         }
 
         // 2. Pixel client-side — mesmo event_id do server (dedup)
+        //    content_name/content_category diferenciam este funil (psicólogos) do quiz (pacientes) no mesmo Pixel
         const leadEventId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        const LEAD_CONTENT = { content_name: 'Aula Escala Psi', content_category: 'psicologos' };
         if (typeof fbq !== 'undefined') {
-          fbq('track', 'Lead', {}, { eventID: leadEventId });
+          fbq('track', 'Lead', LEAD_CONTENT, { eventID: leadEventId });
         }
 
         // 3. /lead — Worker valida Turnstile + dispara CAPI Lead + n8n
@@ -935,6 +937,8 @@
             fbc: window.getCookieByName('_fbc'),
             external_id: window.getSck(),
             utms: window.getUtms(),
+            content_name: LEAD_CONTENT.content_name,
+            content_category: LEAD_CONTENT.content_category,
             form: { nome: nome, email: email, whatsapp: whatsapp, qualificacao: qualificacao }
           })
         });

@@ -352,11 +352,21 @@
     t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
     document,'script','https://connect.facebook.net/en_US/fbevents.js');
 
-    var PIXEL_ID      = '1313351739884916';
-    var WORKER_URL    = 'https://lp.ingridrodriguespsi.com/capi';
-    var COOKIE_DOMAIN = '.ingridrodriguespsi.com';
-    var ONE_YEAR      = 34560000;
-    var TWO_YEARS     = 63072000;
+    var PIXEL_ID          = '1313351739884916';
+    var WORKER_URL        = 'https://lp.ingridrodriguespsi.com/capi';
+    var LEAD_ENDPOINT     = 'https://lp.ingridrodriguespsi.com/lead';
+    var COOKIE_DOMAIN     = '.ingridrodriguespsi.com';
+    var ONE_YEAR          = 34560000;
+    var TWO_YEARS         = 63072000;
+
+    // Funil — diferencia o quiz (pacientes) do webinar (psicólogos) no mesmo Pixel
+    var CONTENT_NAME      = 'Quiz Conexão Casamento';
+    var CONTENT_CATEGORY  = 'pacientes';
+    var CONTENT_DATA      = { content_name: CONTENT_NAME, content_category: CONTENT_CATEGORY };
+
+    // Turnstile (anti-bot invisível) — mesma sitekey do webinar
+    var TURNSTILE_SITEKEY = '0x4AAAAAADEO7dNQ3JwkNMuh';
+    var _tsWidgetId = null, _tsResolve = null, _tsReject = null;
 
     function genId() {
       return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -457,47 +467,80 @@
     // ── PageView ──────────────────────────────
     var pvId = genId();
     fbq('init', PIXEL_ID);
-    fbq('track', 'PageView', {}, { eventID: pvId });
+    fbq('track', 'PageView', CONTENT_DATA, { eventID: pvId });
     fetch(WORKER_URL, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         event_name: 'PageView', event_id: pvId,
         event_source_url: window.location.href,
         fbp: getCookie('_fbp'), fbc: getCookie('_fbc'),
-        external_id: sck, utms: utms, user_data: {}
+        external_id: sck, utms: utms, user_data: {},
+        content_name: CONTENT_NAME, content_category: CONTENT_CATEGORY
       })
     }).then(function(r){ return r.json(); })
       .then(function(d){ storeEnrichment(d._enrichment); })
       .catch(function(){});
 
-    // ── Lead — disparado no submit do formulário ──
+    // ── Turnstile — anti-bot invisível ──
+    window.onTurnstileLoad = function() {
+      if (!window.turnstile) return;
+      _tsWidgetId = window.turnstile.render('#cf-turnstile-widget', {
+        sitekey:            TURNSTILE_SITEKEY,
+        callback:           function(token){ if (_tsResolve) _tsResolve(token); },
+        'error-callback':   function(){ if (_tsReject) _tsReject(new Error('turnstile error')); },
+        'timeout-callback': function(){ if (_tsReject) _tsReject(new Error('turnstile timeout')); }
+      });
+    };
+    window.getTurnstileToken = function() {
+      return new Promise(function(resolve, reject) {
+        if (!window.turnstile || _tsWidgetId === null) {
+          reject(new Error('turnstile not loaded')); return;
+        }
+        _tsResolve = resolve; _tsReject = reject;
+        try { window.turnstile.reset(_tsWidgetId); } catch(e){}
+        window.turnstile.execute(_tsWidgetId);
+        setTimeout(function(){
+          if (_tsReject === reject) reject(new Error('turnstile timeout 10s'));
+        }, 10000);
+      });
+    };
+
+    // ── Lead — gateway /lead (Turnstile + CAPI dedup) ──
     window.trackLead = async function(userData) {
       var eventId = genId();
-      fbq('track', 'Lead', {}, { eventID: eventId });
-      var enrichment = null;
+      fbq('track', 'Lead', CONTENT_DATA, { eventID: eventId });
+
+      var tsToken;
+      try { tsToken = await window.getTurnstileToken(); }
+      catch(e){ console.error('Turnstile falhou:', e); return { ok:false, reason:'turnstile' }; }
+
+      var enrichment = null, ok = false;
       try {
-        var res = await Promise.race([
-          fetch(WORKER_URL, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_name: 'Lead', event_id: eventId,
-              event_source_url: window.location.href,
-              fbp: getCookie('_fbp'), fbc: getCookie('_fbc'),
-              external_id: sck, utms: utms, user_data: userData
-            })
-          }),
-          new Promise(function(_, rej){ setTimeout(rej, 400); })
-        ]);
+        var res = await fetch(LEAD_ENDPOINT, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            turnstile_token: tsToken,
+            event_id: eventId,
+            event_source_url: window.location.href,
+            fbp: getCookie('_fbp'), fbc: getCookie('_fbc'),
+            external_id: sck, utms: utms,
+            content_name: CONTENT_NAME, content_category: CONTENT_CATEGORY,
+            form: { nome: userData.name, email: userData.email, whatsapp: userData.phone }
+          })
+        });
         var json = await res.json();
+        ok = json.success === true;
         enrichment = json._enrichment || null;
-      } catch(e){}
+      } catch(e){ console.error('Lead /lead falhou:', e); }
+
       saveLeadCookies(userData, enrichment);
+      return { ok: ok };
     };
 
     // ── Contact — disparado ao clicar em ir para o WhatsApp ──
     window.trackContact = function() {
       var eventId = genId();
-      fbq('track', 'Contact', {}, { eventID: eventId });
+      fbq('track', 'Contact', CONTENT_DATA, { eventID: eventId });
       fetch(WORKER_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -505,6 +548,7 @@
           event_source_url: window.location.href,
           fbp: getCookie('_fbp'), fbc: getCookie('_fbc'),
           external_id: sck, utms: utms,
+          content_name: CONTENT_NAME, content_category: CONTENT_CATEGORY,
           user_data: {
             email: getCookie('LeadEmail') || '',
             phone: getCookie('LeadPhone') || '',
@@ -514,6 +558,9 @@
       }).catch(function(){});
     };
   </script>
+
+  <!-- Turnstile script (carrega async; chama window.onTurnstileLoad quando pronto) -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
 </head>
 <body>
 
@@ -589,6 +636,7 @@
     <label class="form-label">Seu Whatsapp (com DDD)</label>
     <input type="tel" class="form-input" id="fPhone" placeholder="Digite seu celular..." />
 
+    <div id="cf-turnstile-widget" style="display:flex;justify-content:center;margin:8px 0;"></div>
     <button class="btn btn-red" onclick="submitLead()">Ver meu diagnóstico →</button>
     <p class="lead-disclaimer">Seus dados são confidenciais e não serão compartilhados.</p>
   </div>
@@ -933,7 +981,7 @@
     return d.textContent || '';
   }
 
-  function submitLead() {
+  async function submitLead() {
     const name  = document.getElementById('fName').value.trim();
     const email = document.getElementById('fEmail').value.trim();
     const phone = document.getElementById('fPhone').value.trim();
@@ -943,9 +991,26 @@
       return;
     }
 
+    const btn = document.querySelector('#screen-lead .btn-red');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+    // 1. Meta CAPI Lead via /lead — Turnstile valida e CAPI dispara com dedup.
+    //    Bloqueia o avanço se a validação anti-bot falhar (mesmo padrão do webinar).
+    let leadOk = false;
+    if (typeof window.trackLead === 'function') {
+      const r = await window.trackLead({ name, email, phone });
+      leadOk = !!(r && r.ok);
+    }
+    if (!leadOk) {
+      alert('Não foi possível validar seu cadastro. Recarregue a página e tente de novo.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Ver meu diagnóstico →'; }
+      return;
+    }
+
+    // 2. Webhook n8n — grava o lead com payload completo (p1..p9 + score + resultado).
+    //    Roda DEPOIS do /lead pra garantir que só humano valide. Não-bloqueante.
     const score  = calcScore();
     const result = RESULTS.find(r => score >= r.range[0] && score <= r.range[1]) || RESULTS[RESULTS.length - 1];
-
     const payload = {
       timestamp : new Date().toISOString(),
       nome      : name,
@@ -960,28 +1025,21 @@
       p5        : answers[4]?.text || '',
       p6        : answers[5]?.text || '',
       p7        : answers[6]?.text || '',
-      p8          : answers[7]?.text || '',
-      p9          : answers[8]?.text || '',
+      p8        : answers[7]?.text || '',
+      p9        : answers[8]?.text || '',
       utm_source  : UTM.utm_source,
       utm_campaign: UTM.utm_campaign,
       utm_medium  : UTM.utm_medium,
       utm_content : UTM.utm_content,
       utm_term    : UTM.utm_term,
     };
-
-    // Webhook n8n — grava lead na planilha (não-bloqueante)
     fetch(WEBHOOK_URL, {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body   : JSON.stringify(payload),
     }).catch(() => {});
 
-    // Meta CAPI — evento Lead (browser + servidor, timeout 400ms)
     window._leadEmail = email;
-    if (typeof window.trackLead === 'function') {
-      window.trackLead({ name, email, phone });
-    }
-
     setProgress(96);
     showScreen('screen-loading');
     animateLoading();
