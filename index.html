@@ -556,6 +556,166 @@
       .form-card { padding: 24px 20px; }
     }
   </style>
+
+  <!-- ====================================================================
+       Meta Pixel + Conversions API — Ingrid Rodrigues
+       Pixel: 1313351739884916  |  Worker: lp.ingridrodriguespsi.com/capi
+  ===================================================================== -->
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+
+    var PIXEL_ID      = '1313351739884916';
+    var WORKER_URL    = 'https://lp.ingridrodriguespsi.com/capi';
+    var COOKIE_DOMAIN = '.ingridrodriguespsi.com';
+    var ONE_YEAR      = 34560000;
+    var TWO_YEARS     = 63072000;
+
+    function genId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    function getCookie(name) {
+      var m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[2]) : null;
+    }
+
+    function setCookie(name, value, seconds) {
+      if (!value) return;
+      var exp = new Date(Date.now() + seconds * 1000).toUTCString();
+      document.cookie = name + '=' + encodeURIComponent(value) +
+        '; SameSite=None; Secure; expires=' + exp + '; path=/; domain=' + COOKIE_DOMAIN;
+    }
+
+    function getReferrerHost() {
+      if (!document.referrer) return '';
+      var a = document.createElement('a');
+      a.href = document.referrer;
+      return a.hostname;
+    }
+
+    var sck = getCookie('index') || (localStorage ? localStorage.getItem('index') : null);
+    if (!sck) sck = genId();
+    setCookie('index', sck, ONE_YEAR);
+    try { localStorage.setItem('index', sck); sessionStorage.setItem('index', sck); } catch(e){}
+
+    if (!getCookie('entry_date')) {
+      var ed = Date.now().toString();
+      setCookie('entry_date', ed, ONE_YEAR);
+      try { localStorage.setItem('entry_date', ed); } catch(e){}
+    }
+
+    function captureAndPersistUtms() {
+      var p = new URLSearchParams(window.location.search);
+      var src = p.get('utm_source') || '';
+
+      if (src && src.toLowerCase() !== 'organico') {
+        if (p.get('utm_source'))   setCookie('cookieUtmSource',   p.get('utm_source'),   TWO_YEARS);
+        if (p.get('utm_medium'))   setCookie('cookieUtmMedium',   p.get('utm_medium'),   TWO_YEARS);
+        if (p.get('utm_campaign')) setCookie('cookieUtmCampaign', p.get('utm_campaign'), TWO_YEARS);
+        if (p.get('utm_content'))  setCookie('cookieUtmContent',  p.get('utm_content'),  TWO_YEARS);
+        if (p.get('utm_term'))     setCookie('cookieUtmTerm',     p.get('utm_term'),     TWO_YEARS);
+      }
+
+      return {
+        utm_source:   p.get('utm_source')   || getCookie('cookieUtmSource')   || (document.referrer ? getReferrerHost() : 'direto'),
+        utm_medium:   p.get('utm_medium')   || getCookie('cookieUtmMedium')   || '',
+        utm_campaign: p.get('utm_campaign') || getCookie('cookieUtmCampaign') || '',
+        utm_content:  p.get('utm_content')  || getCookie('cookieUtmContent')  || '',
+        utm_term:     p.get('utm_term')     || getCookie('cookieUtmTerm')     || '',
+      };
+    }
+
+    var utms = captureAndPersistUtms();
+
+    function propagateParams() {
+      var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+      var links = document.getElementsByTagName('a');
+      for (var i = 0; i < links.length; i++) {
+        var el = links[i];
+        var rawHref = el.getAttribute('href') || '';
+        if (!rawHref || rawHref.charAt(0) === '#') continue;
+        try {
+          var url = new URL(el.href);
+          if (url.hostname !== window.location.hostname &&
+              url.hostname.indexOf('ingridrodriguespsi.com') === -1) continue;
+          keys.forEach(function(k) { if (utms[k] && !url.searchParams.has(k)) url.searchParams.set(k, utms[k]); });
+          if (!url.searchParams.has('sck')) url.searchParams.set('sck', sck);
+          el.href = url.toString();
+        } catch(e){}
+      }
+    }
+
+    propagateParams();
+    document.addEventListener('DOMContentLoaded', propagateParams);
+
+    function storeEnrichment(enrichment) {
+      if (!enrichment) return;
+      if (enrichment.geo)    sessionStorage.setItem('_geo',    JSON.stringify(enrichment.geo));
+      if (enrichment.gender) sessionStorage.setItem('_gender', enrichment.gender);
+    }
+
+    function saveLeadCookies(userData, enrichment) {
+      var parts = (userData.name || '').trim().split(/\s+/);
+      setCookie('LeadEmail',     userData.email || '', ONE_YEAR);
+      setCookie('LeadPhone',     userData.phone || '', ONE_YEAR);
+      setCookie('LeadFirstName', parts[0]       || '', ONE_YEAR);
+      setCookie('LeadLastName',  parts.length > 1 ? parts[parts.length - 1] : '', ONE_YEAR);
+      if (enrichment) {
+        setCookie('LeadGenero', enrichment.gender || sessionStorage.getItem('_gender') || '', ONE_YEAR);
+        var geo = enrichment.geo || JSON.parse(sessionStorage.getItem('_geo') || '{}');
+        setCookie('LeadCity',    geo.city    || '', ONE_YEAR);
+        setCookie('LeadState',   geo.region  || '', ONE_YEAR);
+        setCookie('LeadCountry', geo.country || '', ONE_YEAR);
+      }
+    }
+
+    var pvId = genId();
+    fbq('init', PIXEL_ID);
+    fbq('track', 'PageView', {}, { eventID: pvId });
+
+    fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_name: 'PageView', event_id: pvId,
+        event_source_url: window.location.href,
+        fbp: getCookie('_fbp'), fbc: getCookie('_fbc'),
+        external_id: sck, utms: utms, user_data: {}
+      })
+    }).then(function(r){ return r.json(); })
+      .then(function(d){ storeEnrichment(d._enrichment); })
+      .catch(function(){});
+
+    window.trackLead = async function(userData) {
+      var eventId = genId();
+      fbq('track', 'Lead', {}, { eventID: eventId });
+
+      var enrichment = null;
+      try {
+        var res = await Promise.race([
+          fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_name: 'Lead', event_id: eventId,
+              event_source_url: window.location.href,
+              fbp: getCookie('_fbp'), fbc: getCookie('_fbc'),
+              external_id: sck, utms: utms, user_data: userData
+            })
+          }),
+          new Promise(function(_, rej){ setTimeout(rej, 400); })
+        ]);
+        var json = await res.json();
+        enrichment = json._enrichment || null;
+      } catch(e){}
+
+      saveLeadCookies(userData, enrichment);
+    };
+  </script>
 </head>
 <body>
 
@@ -750,6 +910,7 @@
         const result = await response.json();
 
         if (result.success) {
+          await window.trackLead({ name: nome, email: email, phone: whatsapp });
           window.location.href = 'obrigado.html';
         } else {
           alert('Erro ao enviar. Tente novamente.');
@@ -757,6 +918,7 @@
         }
       } catch (error) {
         console.error('Erro:', error);
+        try { await window.trackLead({ name: nome, email: email, phone: whatsapp }); } catch(e){}
         window.location.href = 'obrigado.html';
       }
     }
