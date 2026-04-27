@@ -704,9 +704,9 @@
 
     window.onTurnstileLoad = function() {
       if (!window.turnstile) return;
+      // size NÃO é setado aqui — invisibilidade vem do mode "invisible" configurado no widget na Cloudflare
       _tsWidgetId = window.turnstile.render('#cf-turnstile-widget', {
         sitekey:  TURNSTILE_SITEKEY,
-        size:     'invisible',
         callback:           function(token){ if (_tsResolve) _tsResolve(token); },
         'error-callback':   function(){ if (_tsReject) _tsReject(new Error('turnstile error')); },
         'timeout-callback': function(){ if (_tsReject) _tsReject(new Error('turnstile timeout')); }
