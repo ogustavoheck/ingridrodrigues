@@ -519,9 +519,10 @@
     };
 
     // ── Lead — gateway /lead (Turnstile + CAPI dedup) ──
+    // fbq browser-side só dispara DEPOIS do /lead validar — garante que Pixel
+    // e webhook n8n cheguem juntos (sem leads "fantasmas" no Meta).
     window.trackLead = async function(userData) {
       var eventId = genId();
-      fbq('track', 'Lead', CONTENT_DATA, { eventID: eventId });
 
       var tsToken;
       try { tsToken = await window.getTurnstileToken(); }
@@ -546,7 +547,10 @@
         enrichment = json._enrichment || null;
       } catch(e){ console.error('Lead /lead falhou:', e); }
 
-      saveLeadCookies(userData, enrichment);
+      if (ok) {
+        fbq('track', 'Lead', CONTENT_DATA, { eventID: eventId });
+        saveLeadCookies(userData, enrichment);
+      }
       return { ok: ok };
     };
 
@@ -1046,10 +1050,13 @@
       utm_content : UTM.utm_content,
       utm_term    : UTM.utm_term,
     };
+    // keepalive=true garante que o POST complete mesmo se o usuário sair
+    // antes da request terminar (mobile com rede ruim, fechar aba, etc.)
     fetch(WEBHOOK_URL, {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify(payload),
+      method   : 'POST',
+      headers  : { 'Content-Type': 'application/json' },
+      body     : JSON.stringify(payload),
+      keepalive: true,
     }).catch(() => {});
 
     window._leadEmail = email;
@@ -1108,11 +1115,13 @@
     if (typeof window.trackContact === 'function') window.trackContact();
 
     // Webhook n8n — registra timestamp do clique na planilha
+    // keepalive garante que o POST chega mesmo após window.open trocar de contexto
     if (window._leadEmail) {
       fetch('https://n8n.ghxmkt.com/webhook/25e59324-852a-4866-9e91-fd64a51e8b76', {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ email: window._leadEmail, timestamp: new Date().toISOString() }),
+        method   : 'POST',
+        headers  : { 'Content-Type': 'application/json' },
+        body     : JSON.stringify({ email: window._leadEmail, timestamp: new Date().toISOString() }),
+        keepalive: true,
       }).catch(() => {});
     }
 
