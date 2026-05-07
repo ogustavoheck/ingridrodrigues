@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aula Gratuita Escala Psi — Ingrid Rodrigues</title>
+  <title>Aula Gratuita Escala Psi Ingrid Rodrigues</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -673,9 +673,6 @@
       }
     }
 
-    // Intercepta anchors internos (#xxx) pra fazer scroll suave SEM alterar location.hash.
-    // Sem isso, o Auto Config do fbevents.js dispara um PageView client-side a cada clique
-    // em CTA (não-deduplicado, sem content_data, polui Custom Audiences).
     document.addEventListener('click', function(e) {
       var a = e.target.closest && e.target.closest('a[href^="#"]');
       if (!a) return;
@@ -704,7 +701,6 @@
       .then(function(d){ storeEnrichment(d._enrichment); })
       .catch(function(){});
 
-    // Expõe utilitários para uso no submit do form (escopo handleSubmit)
     window.saveLeadCookies = saveLeadCookies;
     window.getCookieByName  = getCookie;
     window.getSck           = function(){ return sck; };
@@ -718,7 +714,6 @@
 
     window.onTurnstileLoad = function() {
       if (!window.turnstile) return;
-      // size NÃO é setado aqui — invisibilidade vem do mode "invisible" configurado no widget na Cloudflare
       _tsWidgetId = window.turnstile.render('#cf-turnstile-widget', {
         sitekey:  TURNSTILE_SITEKEY,
         callback:           function(token){ if (_tsResolve) _tsResolve(token); },
@@ -751,23 +746,25 @@
   <section class="hero">
     <div class="badge">
       <span class="dot"></span>
-      AULA GRATUITA — EXCLUSIVA PARA PSICÓLOGAS
+      AULA GRATUITA EXCLUSIVA PARA PSICÓLOGAS
     </div>
 
     <h1>Psi, sua clínica não precisa <em>depender só de você</em></h1>
 
     <p class="hero-sub">
-      Eu saí de 30 pacientes pra 12 e <strong>tripliquei meu faturamento</strong> sem depender da minha hora de trabalho. Nessa aula gratuita e exclusiva pra psicólogas, eu te mostro como.
+      Eu saí de 30 pacientes pra 12 e <strong>tripliquei meu faturamento</strong> montando uma equipe de psicólogas parceiras na minha clínica. Nessa aula gratuita e exclusiva pra psicólogas, eu te mostro como.
     </p>
 
     <div class="date-row">
-      <div class="date-pill">30 de Abril</div>
+      <div class="date-pill">14 de Maio</div>
       <div class="date-pill">Quinta-feira</div>
       <div class="date-pill">12h</div>
       <div class="date-pill">Online e gratuito</div>
     </div>
 
     <a href="#inscricao" class="cta">QUERO PARTICIPAR DA AULA</a>
+
+    <p style="margin-top: 16px; font-size: 13px; color: rgba(255,255,255,0.45); letter-spacing: 0.3px;">🎯 Exclusivo para psicólogas que atendem +18 pacientes por semana</p>
   </section>
 
   <!-- ====== O QUE VOCE VAI APRENDER ====== -->
@@ -795,6 +792,7 @@
         <li><span class="arrow">&#8250;</span> Você não quer escalar com infoproduto, grupo terapêutico ou curso online</li>
         <li><span class="arrow">&#8250;</span> Você quer construir algo que continue funcionando mesmo quando você não está atendendo</li>
       </ul>
+      <div class="exclusive-note" style="margin-top:20px; background:rgba(192,57,43,0.06); border-left-color:#C0392B; color:#8B1A1A;">Essa aula NÃO é pra você se o que você busca é apenas captar mais pacientes pra sua própria agenda.</div>
     </div>
   </section>
 
@@ -858,13 +856,14 @@
           <input type="email" placeholder="seu@email.com" id="email">
         </div>
         <div class="form-group">
-          <label>Qual o seu maior desafio hoje?</label>
+          <label>Quantos pacientes você atende por semana?</label>
           <select id="qualificacao">
             <option value="" disabled selected>Selecione</option>
-            <option value="renda_agenda">Minha renda depende 100% da minha agenda</option>
-            <option value="quer_equipe">Quero montar equipe mas não sei por onde começar</option>
-            <option value="ja_tentou">Já tentei escalar (curso, grupo, infoproduto) e não deu certo</option>
-            <option value="faturamento_travado">Faturamento travado mesmo com agenda cheia</option>
+            <option value="0_5">0 a 5</option>
+            <option value="5_10">5 a 10</option>
+            <option value="10_15">10 a 15</option>
+            <option value="15_20">15 a 20</option>
+            <option value="mais_20">Mais de 20</option>
           </select>
         </div>
         <div id="cf-turnstile-widget" style="display:flex;justify-content:center;margin:0 0 12px;"></div>
@@ -879,7 +878,7 @@
 
   <!-- ====== FOOTER ====== -->
   <footer class="footer">
-    <p>&copy; 2026 Ingrid Rodrigues — @ingridrodriguespsi</p>
+    <p>&copy; 2026 Ingrid Rodrigues @ingridrodriguespsi</p>
   </footer>
 
   <!-- ====== SCRIPT ====== -->
@@ -932,7 +931,6 @@
         }
 
         // 2. Pixel client-side — mesmo event_id do server (dedup)
-        //    content_name/content_category diferenciam este funil (psicólogos) do quiz (pacientes) no mesmo Pixel
         const leadEventId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
         const LEAD_CONTENT = { content_name: 'Aula Escala Psi', content_category: 'psicologos' };
         if (typeof fbq !== 'undefined') {
@@ -984,7 +982,6 @@
             })
           });
         } catch (e) {
-          // Não bloqueia — o lead já está no n8n via /lead
           console.warn('Web3Forms falhou, mas lead foi gravado no n8n:', e);
         }
 
